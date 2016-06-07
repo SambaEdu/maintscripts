@@ -855,7 +855,7 @@ echo -e "$COLTXT"
 
 # nscd sucks !
 if [ -e /etc/init.d/nscd  ]; then
-	insserv -r nscd
+	update-rc.d nscd disable
 	/etc/init.d/nscd stop
 fi
 
