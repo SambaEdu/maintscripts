@@ -889,33 +889,36 @@ sleep 2
 chgrp lcs-users /home/profiles || POURSUIVRE 
 
 echo -e "$COLINFO"
-echo "Suppression immédiat du profil errant pour admin "
+echo "Arrêt de samba afin d'éviter toute connexion durant le nettoyage des profils"
 echo -e "$COLTXT"
-
-
-echo -e "$COLINFO"
-echo "Suppression des profils itinérant" | tee -a $fichier_log
-echo -e "$COLTXT"
-
-echo -e "$COLINFO"
-echo "Suppression immédiate des profil errant XP et Seven pour admin"
-echo -e "$COLTXT"
-rm -rf /home/profiles/admin*
-sleep 1
-
-echo -e "$COLINFO"
-echo "Les autres profils seront effacés ensuite en arrière plan afin de ne pas ralentir le script" | tee -a $fichier_log
+/etc/init.d/samba stop
 sleep 2
+
+echo -e "$COLINFO"
+echo "Suppression de /home/netlogon/Default User/"
 echo -e "$COLTXT"
+rm -rf "/home/netlogon/Default User/"
 
+# Utilisation de rsync pour sa rapidité par rapport à rm
+# 
+echo -e "$COLINFO"
+echo "Suppression immédiate des profils itinérants pour tous les utilisateurs.....Cela risque d'être un peu long !"
+echo -e "$COLTXT"
+mkdir -p "empty"
+rsync -a --delete empty/ /home/profiles/
+rm -rf "empty"
 
+echo -e "$COLINFO"
+echo "Remise en route de Samba"
+echo -e "$COLTXT"
+/etc/init.d/samba start
+sleep 2
 
 echo -e "$COLPARTIE"
 echo "Partie 6 : Mise a jour des paquets se3 sous wheezy"  | tee -a $fichier_log
 echo -e "$COLTXT"
 
 
-/etc/init.d/samba restart
 echo -e "$COLINFO"
 echo "Mise à jour des paquets SE3"
 echo -e "$COLTXT"
@@ -940,20 +943,22 @@ echo "Partie 7 : Nettoyage et conversion des fichiers utilisateurs en UTF-8"  | 
 echo -e "$COLTXT"
 
 
-echo "Commande lancée en arrière plan afin de gagner du temps"
-echo " résultats consultables dans le fichier $fichier_log"
-
-
 if [ ! -e "/usr/bin/convmv" ]
 then
         echo "convmv n'est pas installe, on l'installe"
         apt-get install convmv
 fi
 
+echo "conversion immédiate de /home/netlogon"
+/usr/bin/convmv --notest -f iso-8859-15 -t utf-8 -r /home/netlogon 2&>1 | grep -v Skipping | tee -a $fichier_log
+
+echo "Conversion du reste de /home lancée en arrière plan afin de gagner du temps"
+echo " résultats consultables dans le fichier $fichier_log"
+
+
 at_script="$chemin_migr/clean_and_utf8.sh"
 cat > $at_script <<END
 #!/bin/bash
-rm -rf /home/profiles/*
 /usr/bin/convmv --notest -f iso-8859-15 -t utf-8 -r /home 2&>1 | grep -v Skipping >> $fichier_log
 /usr/bin/convmv --notest -f iso-8859-15 -t utf-8 -r /var/se3 2&>1 | grep -v Skipping >> $fichier_log
 END
@@ -994,12 +999,5 @@ DEBIAN_PRIORITY="high"
 DEBIAN_FRONTEND="dialog" 
 export  DEBIAN_PRIORITY
 export  DEBIAN_FRONTEND
-
-
-
-
-
-
-
 
 exit 0
