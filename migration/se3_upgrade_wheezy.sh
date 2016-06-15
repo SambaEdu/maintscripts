@@ -105,7 +105,7 @@ cat >/etc/apt/sources.list.d/se3.list <<END
 deb http://wawadeb.crdp.ac-caen.fr/debian wheezy se3
 
 #### Sources testing desactivee en prod ####
-deb http://wawadeb.crdp.ac-caen.fr/debian wheezy se3testing
+#deb http://wawadeb.crdp.ac-caen.fr/debian wheezy se3testing
 
 #### Sources backports smb41  ####
 deb http://wawadeb.crdp.ac-caen.fr/debian wheezybackports smb41
