@@ -1,5 +1,6 @@
 # installation se3 phase 2
-# version pour wheezy maj 04-2015 - franck molle
+# version pour wheezy - franck molle
+# maj 11-2016 - no testing - modif sur commandes makepasswd
 #!/bin/bash
 
 
@@ -165,7 +166,7 @@ if [ "$MYSQLPW" == "AUTO" ] ; then
 		echo -e "$COLINFO"
 		echo "Changement mot de passe root sql"
 		echo -e "$COLTXT"
-		MYSQLPW=$(makepasswd)
+		MYSQLPW=$(makepasswd | LC_ALL=C sed -r 's/[^a-zA-Z0-9]//g')
 		echo "$MYSQLPW"
 		sed "s/MYSQLPW=\"AUTO\"/MYSQLPW=\"$MYSQLPW\"/" -i /etc/se3/setup_se3.data 
 		sleep 2
@@ -176,7 +177,7 @@ if [ "$ADMINPW" == "AUTO" ] ; then
 		echo -e "$COLINFO"
 		echo "Changement mot de passe admin ldap"
 		echo -e "$COLTXT"
-		ADMINPW=$(makepasswd)
+		ADMINPW=$(makepasswd | LC_ALL=C sed -r 's/[^a-zA-Z0-9]//g')
 		echo "$ADMINPW"
 		echo -e "$COLTXT"
 		sed "s/ADMINPW=\"AUTO\"/ADMINPW=\"$ADMINPW\"/" -i /etc/se3/setup_se3.data 
@@ -188,7 +189,7 @@ if [ "$ADMINSE3PW" == "AUTO" ] ; then
 		echo -e "$COLINFO"
 		echo "Changement mot de passe adminse3"
 		echo -e "$COLTXT"
-		ADMINSE3PW=$(makepasswd)
+		ADMINSE3PW=$(makepasswd | LC_ALL=C sed -r 's/[^a-zA-Z0-9]//g')
 		echo "$ADMINSE3PW"
 		sed "s/ADMINSE3PW=\"AUTO\"/ADMINSE3PW=\"$ADMINSE3PW\"/" -i /etc/se3/setup_se3.data 
 		sleep 2
