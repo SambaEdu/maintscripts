@@ -1,6 +1,6 @@
 #!/bin/bash
 #***************************************************************************************************
-# Auteur Jean yves Morvan - académie de Rouen
+# Auteur Jean yves Morvan - acadÃ©mie de Rouen
 
 COLTXT="\033[1;37m"
 COLTITRE="\033[1;35m"
@@ -58,10 +58,10 @@ slapcat -s ou=Rights,$Base_DN -l /root/save/rights.ldif
 clear
 echo -e "$COLTITRE"
 echo "#########################################################"
-echo "# Sauvegarde des différents mots de passe et parametres #"
+echo "# Sauvegarde des diffÃ©rents mots de passe et parametres #"
 echo "#########################################################"
 
- echo -e "*******************Paramètres LDAP*******************" > /root/save/parametres.txt
+ echo -e "*******************ParamÃ¨tres LDAP*******************" > /root/save/parametres.txt
 echo -e "$COLTXT"
 domaine1=`grep suffix /etc/ldap/slapd.conf  | cut -f1 -s -d','| cut -f2 -s -d'='`
 domaine="$domaine1.ac-rouen.fr"
@@ -84,7 +84,7 @@ echo -n "Mot de passe de AdminSE3 : " >> /root/save/parametres.txt
  `mysql se3db  --column-names=0 -e "select value from params where name='xppass' ;" >> /root/save/parametres.txt` 
 
 
- echo -e "*******************Paramètres samba*******************" >> /root/save/parametres.txt
+ echo -e "*******************ParamÃ¨tres samba*******************" >> /root/save/parametres.txt
  echo -n "Domaine samba : " >> /root/save/parametres.txt
  grep workgroup /etc/samba/smb.conf | cut -f2 -s -d'='  >> /root/save/parametres.txt
 echo -e "\n"
@@ -185,12 +185,13 @@ cd /
 echo -e "$COLTITRE"
 read PAUSE
 
-
 echo "saisir ip du nouveau se3"
 read newip
-echo "copie du dossier save dans ${newip}/root/" 
+echo "copie du dossier save dans ${newip}:/root/" 
 scp -r /root/save root@$newip:/root/ 
 ssh root@$newip 'mkdir /etc/se3; mkdir /var/lib/samba'
+echo "copie de secret.tdb dans ${newip}:/var/lib/samba/" 
 scp /root/save/secret.tdb root@$newip:/var/lib/samba/ 
+echo "copie de setup_se3.data dans $newip:/etc/se3/" 
 scp /root/save/setup_se3.data root@$newip:/etc/se3/ 
 
