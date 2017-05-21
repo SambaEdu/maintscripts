@@ -190,8 +190,8 @@ read newip
 echo "copie du dossier save dans ${newip}:/root/" 
 scp -r /root/save root@$newip:/root/ 
 ssh root@$newip 'mkdir /etc/se3; mkdir /var/lib/samba'
-echo "copie de secret.tdb dans ${newip}:/var/lib/samba/" 
-scp /root/save/secret.tdb root@$newip:/var/lib/samba/ 
+echo "copie de secrets.tdb dans ${newip}:/var/lib/samba/" 
+scp /root/save/secrets.tdb root@$newip:/var/lib/samba/ 
 echo "copie de setup_se3.data dans $newip:/etc/se3/" 
 scp /root/save/setup_se3.data root@$newip:/etc/se3/ 
 
