@@ -8,11 +8,17 @@ COLENTREE="\033[1;33m"
 
 mkdir -p /root/save
 cp  /etc/dhcp3/dhcpd.conf /root/save
-cp /var/lib/samba/secrets.tdb /root/save
+
+if [ -e /var/lib/samba/private/secrets.tdb ]; then 
+	cp  /var/lib/samba/private/secrets.tdb /root/save/
+else
+	cp /var/lib/samba/secrets.tdb /root/save/
+fi
+
 cp /etc/samba/smb.conf /root/save
 cp /etc/ldap.secret /root/save
-if [ -f /etc/se3/setup_se3.data ]
-then cp /etc/se3/setup_se3.data  /root/save/setup_se3.data.old
+if [ -f /etc/se3/setup_se3.data ]; then 
+	cp /etc/se3/setup_se3.data  /root/save/setup_se3.data.old
 fi
 #***************************************************************************************************
 #***************************************************************************************************
@@ -194,4 +200,3 @@ echo "copie de secrets.tdb dans ${newip}:/var/lib/samba/"
 scp /root/save/secrets.tdb root@$newip:/var/lib/samba/ 
 echo "copie de setup_se3.data dans $newip:/etc/se3/" 
 scp /root/save/setup_se3.data root@$newip:/etc/se3/ 
-
