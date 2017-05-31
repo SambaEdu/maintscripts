@@ -7,7 +7,13 @@ COLTITRE="\033[1;35m"
 COLENTREE="\033[1;33m"
 
 mkdir -p /root/save
-cp  /etc/dhcp3/dhcpd.conf /root/save
+
+
+if [ -e /etc/dhcp/dhcpd.conf ];then
+	cp /etc/dhcp/dhcpd.conf /root/save/
+else
+	cp  /etc/dhcp3/dhcpd.conf /root/save/
+fi
 
 if [ -e /var/lib/samba/private/secrets.tdb ]; then 
 	cp  /var/lib/samba/private/secrets.tdb /root/save/
@@ -23,7 +29,7 @@ fi
 #***************************************************************************************************
 #***************************************************************************************************
 Base_DN=`grep suffix /etc/ldap/slapd.conf | cut -f2 -s -d'"'`
-clear
+
 echo -e "$COLTITRE"
 echo "##########################################################################"
 echo "# Recuperation de la base DN :                                           #"
@@ -36,7 +42,7 @@ read PAUSE
 
 
 #***************************************************************************************************
-clear
+
 echo -e "$COLTITRE"
 echo "##############################"
 echo "# Sauvegarde de la base LDAP #"
@@ -46,7 +52,7 @@ echo -e "$COLTXT"
 slapcat > /root/save/ldap_se3_sav.ldif
 #***************************************************************************************************
 #***************************************************************************************************
-clear
+
 echo -e "$COLTITRE"
 echo "#################################################################"
 echo "# Sauvegarde de des branches computers et parcs de la base LDAP #"
@@ -61,7 +67,7 @@ slapcat -s ou=Rights,$Base_DN -l /root/save/rights.ldif
 #***************************************************************************************************
 
 #***************************************************************************************************
-clear
+
 echo -e "$COLTITRE"
 echo "#########################################################"
 echo "# Sauvegarde des différents mots de passe et parametres #"
@@ -104,8 +110,8 @@ echo -e "\n"
 echo -e "*******************DHCP*******************" >> /root/save/parametres.txt 
 echo -n "Pool DHCP : " >> /root/save/parametres.txt
 
-grep range /etc/dhcp/dhcpd.conf | cut -f2-3 -s -d' ' | cut -f1 -s -d';' >> /root/save/parametres.txt
-grep range /etc/dhcp3/dhcpd.conf | cut -f2-3 -s -d' ' | cut -f1 -s -d';' >> /root/save/parametres.txt
+[ -e /etc/dhcp/dhcpd.conf ] && grep range /etc/dhcp/dhcpd.conf | cut -f2-3 -s -d' ' | cut -f1 -s -d';' >> /root/save/parametres.txt
+[ -e /etc/dhcp3/dhcpd.conf ] && grep range /etc/dhcp3/dhcpd.conf | cut -f2-3 -s -d' ' | cut -f1 -s -d';' >> /root/save/parametres.txt
 echo -e "*******************partitions*******************" >> /root/save/parametres.txt 
 echo -n "partitions  : " >> /root/save/parametres.txt
 df >> /root/save/parametres.txt
@@ -182,7 +188,7 @@ mysql se3db -e "select ip,name,mac from se3_dhcp into outfile '/test/dhcp.csv' f
 cp /test/dhcp.csv /root/save
 rm -rf /test/ 
 #***************************************************************************************************
-clear
+
 echo -e "$COLENTREE"
 echo "####################################"
 echo "# Appuyer sur ENTREE pour terminer #"
