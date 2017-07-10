@@ -176,9 +176,9 @@ show_help()
 {
 echo "Script de migration de Wheezy vers Jessie
 A lancer sans option ou avec les options suivantes 
--d|--download : prÃ©pare la migration sans la lancer en tÃ©lÃ©chargeant uniquement les paquets nÃ©cessaires
+-d|--download : prépare la migration sans la lancer en téléchargeant uniquement les paquets nécessaires
 
---no-update	: ne pas vÃ©rifier la mise Ã  jour du script de migration sur le serveur central mais utiliser la version locale
+--no-update	: ne pas vérifier la mise à  jour du script de migration sur le serveur central mais utiliser la version locale
 
 --debug	: lance le script en outrepassant les tests de taille et de place libre des partitions. A NE PAS UTILISER EN PRODUCTION
 
@@ -211,7 +211,7 @@ while :; do
 		;;
      
 		-?*)
-		printf 'Attention : option inconnue ignorÃ©e: %s\n' "$1" >&2
+		printf 'Attention : option inconnue ignorée: %s\n' "$1" >&2
 		;;
   
 		*)
@@ -246,12 +246,12 @@ fi
 if [ "$download" = "yes" ]; then
 	show_title
 	echo -e "$COLINFO"
-	echo "PrÃ©-tÃ©lÃ©chargement des paquets uniquement"
+	echo "Pré-téléchargement des paquets uniquement"
 	echo -e "$COLTXT"
 	SCREEN_TEST
 	GENSOURCEJESSIE
 	echo -e "$COLINFO"
-	echo "Partie Squeeze - Mise Ã  jour des dÃ©pots en cours....Patientez"
+	echo "Partie Squeeze - Mise à  jour des dépots en cours....Patientez"
 	echo -e "$COLTXT"
 	[ "$DEBUG" != "yes" ] && apt-get clean
 	apt-get -qq update -o Acquire::Check-Valid-Until=false
@@ -264,12 +264,12 @@ if [ "$download" = "yes" ]; then
 	list_module=$(cat /root/se3_update_list)
 	if [ -n "$list_module" ]; then
 		echo ""
-		echo "TÃ©lÃ©chargement des modules SE3 devant Ãªtre mis Ã  jour avant migration" 
+		echo "Téléchargement des modules SE3 devant être mis à  jour avant migration" 
 		apt-get install $list_module -d -y --force-yes --allow-unauthenticated 2>&1
 	fi
 	rm -f /root/se3_update_list
 	echo -e "$COLINFO"
-	echo "TÃ©lÃ©chargement des paquets ldap jessie si nÃ©cessaire"
+	echo "Téléchargement des paquets ldap jessie si nécessaire"
 	echo -e "$COLTXT"
 	
 	#modifier les ldap-utils libldap-2.4-2 ???????
@@ -278,21 +278,21 @@ if [ "$download" = "yes" ]; then
 	apt-get install ldap-utils libldap-2.4-2 slapd -d -y --allow-unauthenticated
 	GENSOURCEJESSIE
 	echo -e "$COLINFO"
-	echo "Mise a jour des dÃ©pots Jessie"
+	echo "Mise a jour des dépots Jessie"
 	echo -e "$COLTXT"
 	apt-get -qq update
 	echo -e "$COLINFO"
-	echo "TÃ©lÃ©chargement des paquets Jessie nÃ©cessaires Ã  la migration lancÃ©"
+	echo "Téléchargement des paquets Jessie nécessaires à  la migration lancé"
 	echo -e "$COLTXT"
 	sleep 1
 	apt-get dist-upgrade -d -y --allow-unauthenticated
 	echo -e "$COLINFO"
-	echo "terminÃ© !!"
+	echo "terminé !!"
 	echo -e "$COLTXT"
 	echo "Taille du cache actuel : $(du -sh /var/cache/apt/archives/ |  awk '{print $1}')"
 	touch "$chemin_migr/download_only"
 	echo -e "$COLINFO"
-	echo "RÃ©tablissement des sources wheezy"
+	echo "Rétablissement des sources wheezy"
 	echo -e "$COLTXT"
 	GENSOURCEWHEEZY
 	apt-get -qq update -o Acquire::Check-Valid-Until=false
@@ -345,7 +345,7 @@ if [ "$NODL" != "yes" ]; then
 	wget -N --tries=1 --connect-timeout=1 http://wawadeb.crdp.ac-caen.fr/majse3/$SCRIPT_FILE || ERREUR="1"
 	wget -N --tries=1 --connect-timeout=1 http://wawadeb.crdp.ac-caen.fr/majse3/$SCRIPT_FILE_MD5 || ERREUR="1"
 	if [ "$ERREUR" = "1" ];then
-		ERREUR "ProblÃ¨me pour rÃ©cupÃ©rer la version en ligne : ABANDON !"
+		ERREUR "Problème pour récupérer la version en ligne : ABANDON !"
 		ERREXIT		
 	fi
 	
@@ -354,7 +354,7 @@ if [ "$NODL" != "yes" ]; then
 	if [ "$MD5_CTRL_FILE" != "$MD5_CTRL_DL" ]
 	then	
 		echo -e "$COLERREUR"
-		echo "Controle MD5 du script tÃ©lÃ©chargÃ© incorrecte, relancez le script afin qu'il soit de nouveau telechargÃ©"
+		echo "Controle MD5 du script téléchargé incorrecte, relancez le script afin qu'il soit de nouveau telechargé"
 		echo -e "$COLTXT"
 		exit 1
 	fi
@@ -387,7 +387,7 @@ if [ "$NODL" != "yes" ]; then
 	sleep 2
 	echo -e "$COLTXT"
 else
-echo "mode no-update pas de tÃ©lÃ©chargement"
+echo "mode no-update pas de téléchargement"
 sleep 2
 fi
 
@@ -436,7 +436,7 @@ else
 	exit 1
 fi
 
-[ "$DEBUG" != "yes" ] && [ ! -e "$chemin_migr/download_only" ] && apt-get clean && echo "Suppression du cache effectuÃ©"
+[ "$DEBUG" != "yes" ] && [ ! -e "$chemin_migr/download_only" ] && apt-get clean && echo "Suppression du cache effectué"
 
 if [ "$libre_var" -lt 1000 ];then
 	echo "Espace insuffisant sur /var : $libre_var Mo"
@@ -457,11 +457,11 @@ CHANGEMYSQL localmenu "1"
 if [ ! -e $chemin_migr/phase1-ok ]; then
 	#grep -q "http://archive.debian.org/debian lenny main" /etc/apt/sources.list || 
 	echo -e "$COLINFO"
-	echo "GÃ©nÃ©ration des sources wheezy"
+	echo "Génération des sources wheezy"
 	echo -e "$COLTXT"
 	GENSOURCEJESSIE
     echo -e "$COLINFO"
-    echo "Mise Ã  jour des paquets disponibles....Patientez svp"
+    echo "Mise à  jour des paquets disponibles....Patientez svp"
     echo -e "$COLTXT"
     apt-get -qq update -o Acquire::Check-Valid-Until=false
     echo "Maj si besoin de debian-archive-keyring"
@@ -478,7 +478,7 @@ if [ ! -e $chemin_migr/phase1-ok ]; then
 
 
     if [ "$?" != "0" ]; then
-    ERREUR "Une erreur s'est produite lors de la mise Ã  jour des modules\nIl est conseille de couper la migration"
+    ERREUR "Une erreur s'est produite lors de la mise à  jour des modules\nIl est conseille de couper la migration"
 	POURSUIVRE
 	
     fi
@@ -502,7 +502,7 @@ fi
 
 if [ "$DIST" = "wheezy" ]; then
 	echo -e "$COLINFO"
-	echo "Mise Ã  jour slapd et consors vers leur derniÃ¨re version stable"
+	echo "Mise à  jour slapd et consors vers leur dernière version stable"
 	echo -e "$COLTXT"
 	
 	# modifier ldap-utils libldap-2.4-2 ??????
@@ -616,7 +616,7 @@ if [ ! -e $chemin_migr/phase2b-ok ]; then
 	fi
 
 	
-# Suppression complÃ¨te  d'ocs 
+# Suppression complète  d'ocs 
 
 	if [ -n "$(dpkg -l | grep se3-ocs | grep -v se3-ocs-clientwin)" ]; then
 		apt-get remove --purge se3-ocs ocsinventory-server ocsinventory-agent -y
@@ -746,7 +746,7 @@ echo "Partie 4 : Migration en Wheezy - installations des paquets restants"
 echo -e "$COLTXT"
 POURSUIVRE
 echo -e "$COLINFO"
-echo "migration du systeme lancee.....Ã§a risque d'Ãªtre long ;)" 
+echo "migration du systeme lancee.....ça risque d'être long ;)" 
 echo -e "$COLTXT"
 
 # DEBIAN_FRONTEND="non-interactive" 
@@ -774,14 +774,14 @@ echo "migration du systeme OK" | tee -a $fichier_log
 
 
 echo -e "$COLINFO"
-echo "Retour Ã  la conf sudo par dÃ©faut sous Jessie" | tee -a $fichier_log
+echo "Retour à  la conf sudo par défaut sous Jessie" | tee -a $fichier_log
 
 echo -e "$COLTXT"
 
 
 if [ -e /etc/sudoers.dpkg-dist ]; then
   [ ! -e /etc/sudoers.d/sudoers-se3 ] && mv /etc/sudoers /etc/sudoers.d/sudoers-se3
-  mv /etc/sudoers.dpkg-dist /etc/sudoers && echo "/etc/sudoers.dpkg-dist restaurÃ©"
+  mv /etc/sudoers.dpkg-dist /etc/sudoers && echo "/etc/sudoers.dpkg-dist restauré"
 fi
  
 
@@ -814,7 +814,7 @@ echo "Ajout du support de l'architecture i386 pour dpkg" | tee -a $fichier_log
 echo -e "$COLTXT"
 
 dpkg --add-architecture i386
-echo "Mise Ã  jour des paquets disponibles....Patientez svp"
+echo "Mise à  jour des paquets disponibles....Patientez svp"
 apt-get -qq update
 
 echo -e "$COLINFO"
@@ -831,9 +831,9 @@ echo -e "$COLTXT"
 GENSOURCESE3
 
 echo -e "$COLINFO"
-echo "GÃ©nÃ©ration des sources SE3 dans /etc/apt/sources.list.d/se3.list "
+echo "Génération des sources SE3 dans /etc/apt/sources.list.d/se3.list "
 echo -e "$COLTXT"
-echo "Mise Ã  jour des paquets disponibles....Patientez svp"
+echo "Mise à  jour des paquets disponibles....Patientez svp"
 apt-get -qq update
 apt-get install samba --allow-unauthenticated -y | tee -a $fichier_log
 
@@ -846,7 +846,7 @@ insserv -r winbind | tee -a $fichier_log
 
 
 echo -e "$COLINFO"
-echo "RÃ©Ã©criture du fichier /etc/default/slapd pour utiliser slapd.conf au lieu de cn=config" 
+echo "Réécriture du fichier /etc/default/slapd pour utiliser slapd.conf au lieu de cn=config" 
 echo -e "$COLTXT"
 # Retour Slapd.conf
 /etc/init.d/slapd stop
@@ -869,7 +869,7 @@ sleep 3
 
 
 echo -e "$COLINFO"
-echo "ArrÃªt de nscd - nscd sucks !" | tee -a $fichier_log
+echo "Arrêt de nscd - nscd sucks !" | tee -a $fichier_log
 echo -e "$COLTXT"
 
 # nscd sucks !
@@ -879,7 +879,7 @@ if [ -e /etc/init.d/nscd  ]; then
 fi
 
 echo -e "$COLPARTIE"
-echo "Partie 5 : Nettoyage de fichiers obsolÃ¨tes sur /home et modification des droit sur /home/profiles" | tee -a $fichier_log
+echo "Partie 5 : Nettoyage de fichiers obsolètes sur /home et modification des droit sur /home/profiles" | tee -a $fichier_log
 echo -e "$COLTXT"
 
 if [ -e /home/netlogon/EnableGPO.bat ]; then
@@ -908,22 +908,22 @@ sleep 2
 chgrp lcs-users /home/profiles || POURSUIVRE 
 
 echo -e "$COLINFO"
-echo "Suppression immÃ©diat du profil errant pour admin "
+echo "Suppression immédiat du profil errant pour admin "
 echo -e "$COLTXT"
 
 
 echo -e "$COLINFO"
-echo "Suppression des profils itinÃ©rant" | tee -a $fichier_log
+echo "Suppression des profils itinérant" | tee -a $fichier_log
 echo -e "$COLTXT"
 
 echo -e "$COLINFO"
-echo "Suppression immÃ©diate des profil errant XP et Seven pour admin"
+echo "Suppression immédiate des profil errant XP et Seven pour admin"
 echo -e "$COLTXT"
 rm -rf /home/profiles/admin*
 sleep 1
 
 echo -e "$COLINFO"
-echo "Les autres profils seront effacÃ©s ensuite en arriÃ¨re plan afin de ne pas ralentir le script" | tee -a $fichier_log
+echo "Les autres profils seront effacés ensuite en arrière plan afin de ne pas ralentir le script" | tee -a $fichier_log
 sleep 2
 echo -e "$COLTXT"
 
@@ -936,7 +936,7 @@ echo -e "$COLTXT"
 
 /etc/init.d/samba restart
 echo -e "$COLINFO"
-echo "Mise Ã  jour des paquets SE3"
+echo "Mise à  jour des paquets SE3"
 echo -e "$COLTXT"
 /usr/share/se3/scripts/install_se3-module.sh se3 | tee -a $fichier_log
 
@@ -959,8 +959,8 @@ echo "Partie 7 : Nettoyage et conversion des fichiers utilisateurs en UTF-8"  | 
 echo -e "$COLTXT"
 
 
-echo "Commande lancÃ©e en arriÃ¨re plan afin de gagner du temps"
-echo " rÃ©sultats consultables dans le fichier $fichier_log"
+echo "Commande lancée en arrière plan afin de gagner du temps"
+echo " résultats consultables dans le fichier $fichier_log"
 
 
 if [ ! -e "/usr/bin/convmv" ]
