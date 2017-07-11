@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## $Id$ ##
+## Version beta 0.1 - 07-2017 ##
 
 ####Script permettant de migrer un serveur Se3 de wheezy en jessie puis strech ####
 ### Auteur : Franck Molle franck.molle@ac-rouen.fr
@@ -53,9 +53,12 @@ POURSUIVRE()
 
 LINE_TEST()
 {
+echo "Test de la connexion internet wget http://wawadeb.crdp.ac-caen.fr/index.html"
 if ( ! wget -q --output-document=/dev/null 'http://wawadeb.crdp.ac-caen.fr/index.html') ; then
 	ERREUR "Votre connexion internet ou la configuration du proxy ne semble pas fonctionnelle !!" 
 	exit 1
+else
+	echo "Connexion Ok :)"
 fi
 }
 
@@ -220,7 +223,7 @@ while :; do
  		shift
 done
 
-option="-y"
+option_apt="-y"
 PERMSE3_OPTION="--light"
 DEBIAN_PRIORITY="critical"
 DEBIAN_FRONTEND="noninteractive"
@@ -228,7 +231,10 @@ export  DEBIAN_FRONTEND
 export  DEBIAN_PRIORITY
 
 NODL="no"
-DEBUG="no"
+DEBUG="yes"
+option_update="-o Acquire::Check-Valid-Until=false"
+
+
 #########################################  
 
 [ -e /root/debug ] && DEBUG="yes"
@@ -249,12 +255,12 @@ if [ "$download" = "yes" ]; then
 	echo "Pré-téléchargement des paquets uniquement"
 	echo -e "$COLTXT"
 	SCREEN_TEST
-	GENSOURCEJESSIE
+	GENSOURCEWHEEZY
 	echo -e "$COLINFO"
 	echo "Partie Squeeze - Mise à  jour des dépots en cours....Patientez"
 	echo -e "$COLTXT"
 	[ "$DEBUG" != "yes" ] && apt-get clean
-	apt-get -qq update -o Acquire::Check-Valid-Until=false
+	apt-get -qq update $option_update
 	(
 	dpkg -l|grep se3-|cut -d ' ' -f3|while read package
 	do
@@ -269,13 +275,13 @@ if [ "$download" = "yes" ]; then
 	fi
 	rm -f /root/se3_update_list
 	echo -e "$COLINFO"
-	echo "Téléchargement des paquets ldap jessie si nécessaire"
+	echo "Téléchargement des paquets ldap Wheezy si nécessaire"
 	echo -e "$COLTXT"
 	
 	#modifier les ldap-utils libldap-2.4-2 ???????
 	
 	
-	apt-get install ldap-utils libldap-2.4-2 slapd -d -y --allow-unauthenticated
+ 	apt-get install ldap-utils libldap-2.4-2 slapd -d -y --allow-unauthenticated
 	GENSOURCEJESSIE
 	echo -e "$COLINFO"
 	echo "Mise a jour des dépots Jessie"
@@ -295,7 +301,7 @@ if [ "$download" = "yes" ]; then
 	echo "Rétablissement des sources wheezy"
 	echo -e "$COLTXT"
 	GENSOURCEWHEEZY
-	apt-get -qq update -o Acquire::Check-Valid-Until=false
+	apt-get -qq update $option_update
 	exit 0
 fi
 
@@ -312,8 +318,8 @@ echo -e "$COLTXT"
 
 # On teste la version de debian
  
-if  ! egrep -q "^6.0" /etc/debian_version;  then
-        if egrep -q "^7." /etc/debian_version; then
+if  ! egrep -q "^7.0" /etc/debian_version;  then
+        if egrep -q "^8." /etc/debian_version; then
                 echo "Votre serveur est deja en version Debian Jessie"
                 echo "Vous pouvez continuer si vous souhaitez terminer une migration precedente"
                 echo "Le script se positionnera automatiquement au bon endroit"
@@ -402,8 +408,8 @@ fi
 PARTROOT=`df | grep "/\$" | sed -e "s/ .*//"`
 PARTROOT_SIZE=$(fdisk -s $PARTROOT)
 rm -f /root/dead.letter
-if [ "$PARTROOT_SIZE" -le 2000000 ]; then
-	ERREUR "La partition racine fait moins de 5Go, c'est insuffisant pour passer en Jessie" | tee -a $fichier_log
+if [ "$PARTROOT_SIZE" -le 3000000 ]; then
+	ERREUR "La partition racine fait moins de 3Go, c'est insuffisant pour passer en Jessie" | tee -a $fichier_log
 	if [ "$DEBUG" = "yes" ]; then
 		echo "mode debug actif"
 		POURSUIVRE
@@ -459,11 +465,11 @@ if [ ! -e $chemin_migr/phase1-ok ]; then
 	echo -e "$COLINFO"
 	echo "Génération des sources wheezy"
 	echo -e "$COLTXT"
-	GENSOURCEJESSIE
+	GENSOURCEWHEEZY
     echo -e "$COLINFO"
     echo "Mise à  jour des paquets disponibles....Patientez svp"
     echo -e "$COLTXT"
-    apt-get -qq update -o Acquire::Check-Valid-Until=false
+    apt-get -qq update $option_update
     echo "Maj si besoin de debian-archive-keyring"
     apt-get install debian-archive-keyring --allow-unauthenticated
     SE3_CANDIDAT=$(apt-cache policy se3 | grep "Candidat" | awk '{print $2}')
@@ -618,18 +624,18 @@ if [ ! -e $chemin_migr/phase2b-ok ]; then
 	
 # Suppression complète  d'ocs 
 
-	if [ -n "$(dpkg -l | grep se3-ocs | grep -v se3-ocs-clientwin)" ]; then
-		apt-get remove --purge se3-ocs ocsinventory-server ocsinventory-agent -y
-		mysqladmin -f drop ocsweb 
-		rm -f /var/www/se3/includes/dbconfig.inc.php
-		mysql -e "drop USER ocs@localhost" -b mysql
-		mysql -e "drop USER ocs" -b mysql
-		rm -f /etc/apache2se/conf.d/ocsinventory.conf
-		rm -f /etc/apache2/conf.d/ocsreports.conf
-	fi
+# 	if [ -n "$(dpkg -l | grep se3-ocs | grep -v se3-ocs-clientwin)" ]; then
+# 		apt-get remove --purge se3-ocs ocsinventory-server ocsinventory-agent -y
+# 		mysqladmin -f drop ocsweb 
+# 		rm -f /var/www/se3/includes/dbconfig.inc.php
+# 		mysql -e "drop USER ocs@localhost" -b mysql
+# 		mysql -e "drop USER ocs" -b mysql
+# 		rm -f /etc/apache2se/conf.d/ocsinventory.conf
+# 		rm -f /etc/apache2/conf.d/ocsreports.conf
+# 	fi
 	
 	# On assure la comptibilite mysql superieur a 5.1.12
-	sed -i 's/^skip-bdb/#skip-bdb/g'  /etc/mysql/my.cnf
+# 	sed -i 's/^skip-bdb/#skip-bdb/g'  /etc/mysql/my.cnf
 
 	echo "mise a jour de lib6 - locales" | tee -a $fichier_log
 
@@ -649,18 +655,21 @@ if [ ! -e $chemin_migr/phase2b-ok ]; then
 	sleep 3
 	
 	
-	
-	echo "mise a jour de lib6 - locales  et mysql-server" | tee -a $fichier_log
+### modif ###
 
-	aptitude -o Dpkg::Options::="--force-confnew" install mysql-server -y | tee -a $fichier_log
-	if [ "$?" != "0" ]; then
-		mv /etc/apt/sources.list_save_migration /etc/apt/sources.list 
-		ERREUR "Une erreur s'est produite lors de la mise a jour du paquet mysql-server. Reglez le probleme et relancez le script"
-		ERREXIT
-	fi
-	echo -e "$COLINFO"
-	echo "mise a jour de  mysql-server ---> OK" | tee -a $fichier_log
-	echo -e "$COLTXT"
+# Mysl avec le reste pour le moment....	
+	
+# 	echo "mise a jour de lib6 - locales  et mysql-server" | tee -a $fichier_log
+# 
+# 	aptitude -o Dpkg::Options::="--force-confnew" install mysql-server -y | tee -a $fichier_log
+# 	if [ "$?" != "0" ]; then
+# 		mv /etc/apt/sources.list_save_migration /etc/apt/sources.list 
+# 		ERREUR "Une erreur s'est produite lors de la mise a jour du paquet mysql-server. Reglez le probleme et relancez le script"
+# 		ERREXIT
+# 	fi
+# 	echo -e "$COLINFO"
+# 	echo "mise a jour de  mysql-server ---> OK" | tee -a $fichier_log
+# 	echo -e "$COLTXT"
 	sleep 3
 	touch $chemin_migr/phase2b-ok
 	
@@ -685,62 +694,6 @@ else
 fi
 
 
-# if [ -e "/usr/share/ocsinventory-server" -a ! -e "$chemin_migr/ocs-ok" ]; then
-# 	rootsql=$(grep password  /root/.my.cnf | cut -d"=" -f2)
-# 	ocssql=$(grep PSWD_BASE  /var/www/se3/includes/dbconfig.inc.php | cut -d\" -f4)
-# 
-# 	echo -e "$COLPARTIE"
-# 	echo "Partie 3 : Mise a jour OCS Inventory" 
-# 	echo -e "$COLTXT"
-# 	echo "ocsinventory-server	ocsinventory-server/password-confirm	password	$rootsql
-# ocsinventory-server	ocsinventory-server/mysql/admin-pass	password	$rootsql
-# # Mot de passe de connexion MySQL pour ocsinventory-serverÂ :
-# ocsinventory-server	ocsinventory-server/mysql/app-pass	password	$ocssql
-# ocsinventory-server	ocsinventory-server/app-password-confirm	password	$ocssql
-# " > config_ocs.txt
-# 	debconf-set-selections < config_ocs.txt
-# 	# DEBIAN_PRIORITY="high"
-# 	# 	DEBIAN_FRONTEND="dialog" 
-# 	# DEBIAN_FRONTEND="dialog" DEBIAN_PRIORITY="high" 
-# 	apt-get install ocsinventory-server -y 
-# 
-# 	if [ "$?" != "0" ]; then
-# 		echo -e "$COLINFO"
-# 		echo "Reconfiguration du paquet OCS pour correction Erreur dpkg"
-# 		echo -e "$COLTXT"
-# 		dpkg-reconfigure ocsinventory-server && echo "Ok !!" 
-# 	else
-# 		echo -e "$COLINFO"
-# 		echo "Configuration du paquet OCS Ok !!"
-# 		echo -e "$COLTXT"
-# 	fi
-# 
-# 	echo -e "$COLINFO"
-# 	echo "Configuration du paquet OCS Ok !!"
-# 	echo -e "$COLTXT"
-# 	/etc/init.d/apache2se restart
-# 	sleep 2
-# 	APACHE2SE_PID="/var/run/apache2se.pid"
-# 	OCSCONF="/etc/ocsinventory/ocsinventory.conf"
-# 
-# 	if [ -e "$OCSCONF" ]; then
-# 		if [ ! -e "$APACHE2SE_PID" ]; then
-# 				echo "Interface Web HS - Tentative de reparation automatique de la conf OCS"
-# 				grep -q "PerlSetEnv OCS_DB_PORT 3306" $OCSCONF || sed "s/PerlSetEnv OCS_DB_PORT/PerlSetEnv OCS_DB_PORT 3306 /" -i $OCSCONF 
-# 				/etc/init.d/apache2se restart 
-# 				sleep 2
-# 				if [ ! -e "$APACHE2SE_PID" ]; then
-# 					echo "Interface Web toujours HS malgre la tentative de reparation automatique"
-# 					echo "Extrait de /var/log/apache2se/errorse.log"
-# 					tail /var/log/apache2se/errorse.log
-# 				fi
-# 			
-# 		fi
-# 	fi
-# 
-# fi
-
-
 echo -e "$COLPARTIE"
 echo "Partie 4 : Migration en Wheezy - installations des paquets restants" 
 echo -e "$COLTXT"
@@ -750,7 +703,7 @@ echo "migration du systeme lancee.....ça risque d'être long ;)"
 echo -e "$COLTXT"
 
 # DEBIAN_FRONTEND="non-interactive" 
-apt-get dist-upgrade $option  < /dev/tty | tee -a $fichier_log
+apt-get dist-upgrade $option_apt  < /dev/tty | tee -a $fichier_log
 
 
 if [ "$?" != "0" ]; then
@@ -825,23 +778,26 @@ apt-get install wine-bin:i386 -y | tee -a $fichier_log
 
 [ ! -e "$chemin_migr/download_only" ] && apt-get clean
 
-echo -e "$COLINFO"
-echo "Installation du backport samba 4.1" | tee -a $fichier_log
-echo -e "$COLTXT"
-GENSOURCESE3
-
-echo -e "$COLINFO"
-echo "Génération des sources SE3 dans /etc/apt/sources.list.d/se3.list "
-echo -e "$COLTXT"
-echo "Mise à  jour des paquets disponibles....Patientez svp"
-apt-get -qq update
-apt-get install samba --allow-unauthenticated -y | tee -a $fichier_log
+# echo -e "$COLINFO"
+# echo "Installation du backport samba 4.1" | tee -a $fichier_log
+# echo -e "$COLTXT"
+# GENSOURCESE3
+# 
+# echo -e "$COLINFO"
+# echo "Génération des sources SE3 dans /etc/apt/sources.list.d/se3.list "
+# echo -e "$COLTXT"
+# echo "Mise à  jour des paquets disponibles....Patientez svp"
+# apt-get -qq update
+# apt-get install samba --allow-unauthenticated -y | tee -a $fichier_log
 
 
 echo -e "$COLINFO"
 echo "On stopppe le service winbind" | tee -a $fichier_log
 echo -e "$COLTXT"
 service winbind stop | tee -a $fichier_log
+
+
+### Modif à faire ###
 insserv -r winbind | tee -a $fichier_log
 
 
@@ -849,7 +805,7 @@ echo -e "$COLINFO"
 echo "Réécriture du fichier /etc/default/slapd pour utiliser slapd.conf au lieu de cn=config" 
 echo -e "$COLTXT"
 # Retour Slapd.conf
-/etc/init.d/slapd stop
+service slapd stop
 #sed -i "s/#SLAPD_CONF=/SLAPD_CONF=\"\/etc\/ldap\/slapd.conf\"/g" /etc/default/slapd
 echo 'SLAPD_CONF="/etc/ldap/slapd.conf"
 SLAPD_USER="openldap"
@@ -864,7 +820,7 @@ SLAPD_OPTIONS=""
 cp $chemin_migr/slapd.conf /etc/ldap/slapd.conf
 chown openldap:openldap /etc/ldap/slapd.conf
 sleep 2
-/etc/init.d/slapd start
+service slapd start
 sleep 3
 
 
@@ -872,11 +828,16 @@ echo -e "$COLINFO"
 echo "Arrêt de nscd - nscd sucks !" | tee -a $fichier_log
 echo -e "$COLTXT"
 
+
+
+### Modif à faire ###
 # nscd sucks !
 if [ -e /etc/init.d/nscd  ]; then
 	insserv -r nscd
-	/etc/init.d/nscd stop
+	service nscd stop
 fi
+
+
 
 echo -e "$COLPARTIE"
 echo "Partie 5 : Nettoyage de fichiers obsolètes sur /home et modification des droit sur /home/profiles" | tee -a $fichier_log
@@ -934,7 +895,7 @@ echo "Partie 6 : Mise a jour des paquets se3 sous jessie"  | tee -a $fichier_log
 echo -e "$COLTXT"
 
 
-/etc/init.d/samba restart
+service samba restart
 echo -e "$COLINFO"
 echo "Mise à  jour des paquets SE3"
 echo -e "$COLTXT"
@@ -944,10 +905,10 @@ echo -e "$COLTXT"
 echo -e "$COLINFO"
 echo "Redemarrage des services...."
 echo -e "$COLCMD"
-/etc/init.d/apache2se restart
+service apache2se restart
 
-/etc/init.d/mysql restart
-/etc/init.d/samba restart
+service mysql restart
+service samba restart
 
 # modif base sql
 mysql -e "UPDATE se3db.params SET value = 'jessie' WHERE value = 'wheezy';" 
