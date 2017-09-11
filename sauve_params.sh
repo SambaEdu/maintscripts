@@ -1,13 +1,24 @@
 #!/bin/bash
 #***************************************************************************************************
 # Auteur Jean yves Morvan - académie de Rouen
+# 09/2017 modif F. Molle : Utilisation des infos en cache la base MySql 
 
 COLTXT="\033[1;37m"
 COLTITRE="\033[1;35m"
 COLENTREE="\033[1;33m"
 
 mkdir -p /root/save
-
+if [ -e /etc/se3/config_c.cache.sh ] && [ -e /etc/se3/config_l.cache.sh ] && [ -e /etc/se3/config_m.cache.sh ] 
+then
+	echo "Initialisation des variables avec le cache de la BDD"
+else
+	echo "Fichier cache inexistant - création du cache"
+	/usr/share/se3/includes/config.inc.sh -clmf
+	
+fi
+source /etc/se3/config_c.cache.sh 
+source /etc/se3/config_l.cache.sh
+source /etc/se3/config_m.cache.sh
 
 if [ -e /etc/dhcp/dhcpd.conf ];then
 	cp /etc/dhcp/dhcpd.conf /root/save/
@@ -28,8 +39,8 @@ if [ -f /etc/se3/setup_se3.data ]; then
 fi
 #***************************************************************************************************
 #***************************************************************************************************
-Base_DN=`grep suffix /etc/ldap/slapd.conf | cut -f2 -s -d'"'`
 
+Base_DN="$ldap_base_dn"
 echo -e "$COLTITRE"
 echo "##########################################################################"
 echo "# Recuperation de la base DN :                                           #"
@@ -75,37 +86,47 @@ echo "#########################################################"
 
  echo -e "*******************Paramètres LDAP*******************" > /root/save/parametres.txt
 echo -e "$COLTXT"
-domaine1=`grep suffix /etc/ldap/slapd.conf  | cut -f1 -s -d','| cut -f2 -s -d'='`
-domaine="$domaine1.ac-rouen.fr"
-echo -e "Domaine de messagerie : $domaine" >> /root/save/parametres.txt
-
+echo -e "Domaine de messagerie : $domain" >> /root/save/parametres.txt
 echo -n "Base DN : " >> /root/save/parametres.txt
-grep suffix /etc/ldap/slapd.conf | cut -f2 -s -d'"' >> /root/save/parametres.txt
+echo "$Base_DN" >> /root/save/parametres.txt
 
 echo -n "Root DN : " >> /root/save/parametres.txt
-grep rootdn /etc/ldap/slapd.conf | cut -f2 -s -d'"' | cut -f2 -s -d'=' | cut -f1 -s -d',' >> /root/save/parametres.txt
+echo "$adminRdn" >> /root/save/parametres.txt
 
 echo -n "Mot de passe LDAP : " >> /root/save/parametres.txt
 cat /etc/ldap.secret >>  /root/save/parametres.txt
 
- echo -e "*******************Autres mots de passe*******************" >> /root/save/parametres.txt
-echo -n "Mot de passe MySql : " >> /root/save/parametres.txt
-grep password /root/.my.cnf | cut -f2 -s -d'=' >> /root/save/parametres.txt
+if [ -e  /etc/ldap/syncrepl.conf ]; then
+	echo "Réplication d'annuaire détectée"
+	echo "Attention : réplication d'annuaire en place" >> /root/save/parametres.txt
+	grep HOST /etc/ldap/ldap.conf >> /root/save/parametres.txt
+fi
 
-echo -n "Mot de passe de AdminSE3 : " >> /root/save/parametres.txt
- `mysql se3db  --column-names=0 -e "select value from params where name='xppass' ;" >> /root/save/parametres.txt` 
+if [ -e /etc/apache2/sites-enabled/webdav ]; then
+	echo "Existence d'un service webdav pour interconnexion ENT détectée"
+	echo "****************** Service Webdav ******************" >> /root/save/parametres.txt
+	echo "Attention : Service webdav pour interconnexion ENT détecté" >> /root/save/parametres.txt
+fi
+
+
+ echo -e "*******************Autres mots de passe*******************" >> /root/save/parametres.txt
+ echo -n "Mot de passe MySql : " >> /root/save/parametres.txt
+ grep password /root/.my.cnf | cut -f2 -s -d'=' >> /root/save/parametres.txt
+
+ echo -n "Mot de passe de AdminSE3 : " >> /root/save/parametres.txt
+ echo "$xppass" >> /root/save/parametres.txt 
 
 
  echo -e "*******************Paramètres samba*******************" >> /root/save/parametres.txt
  echo -n "Domaine samba : " >> /root/save/parametres.txt
- grep workgroup /etc/samba/smb.conf | cut -f2 -s -d'='  >> /root/save/parametres.txt
-echo -e "\n"
+ echo "$se3_domain" >> /root/save/parametres.txt
+ echo -e "\n"
  echo -n "Nom NetBios : " >> /root/save/parametres.txt
- grep "netbios name" /etc/samba/smb.conf | cut -f2 -s -d'='  >> /root/save/parametres.txt
-echo -e "\n"
- echo -n "@ip  et masque :" >> /root/save/parametres.txt
- grep -m 1 interfaces /etc/samba/smb.conf | cut -f2 -s -d'='  >> /root/save/parametres.txt
-echo -e "\n"
+ echo "$netbios_name" >> /root/save/parametres.txt
+ echo -e "\n"
+ echo -n "@ip  et masque : " >> /root/save/parametres.txt
+ echo "$se3ip / $se3mask"  >> /root/save/parametres.txt
+ echo -e "\n"
 
 echo -e "*******************DHCP*******************" >> /root/save/parametres.txt 
 echo -n "Pool DHCP : " >> /root/save/parametres.txt
@@ -197,12 +218,18 @@ cd /
 echo -e "$COLTITRE"
 read PAUSE
 
-echo "saisir ip du nouveau se3"
-read newip
-echo "copie du dossier save dans ${newip}:/root/" 
-scp -r /root/save root@$newip:/root/ 
-ssh root@$newip 'mkdir /etc/se3; mkdir /var/lib/samba'
-echo "copie de secrets.tdb dans ${newip}:/var/lib/samba/" 
-scp /root/save/secrets.tdb root@$newip:/var/lib/samba/ 
-echo "copie de setup_se3.data dans $newip:/etc/se3/" 
-scp /root/save/setup_se3.data root@$newip:/etc/se3/ 
+
+echo "Voulez-vous copier les paramètres vers un autre se3 pour une migration ? O/n"
+read rep
+
+if [ "$rep" != "n" ]; then
+	echo "saisir ip du nouveau se3"
+	read newip
+	echo "copie du dossier save dans ${newip}:/root/" 
+	scp -r /root/save root@$newip:/root/ 
+	ssh root@$newip 'mkdir /etc/se3; mkdir /var/lib/samba'
+	echo "copie de secrets.tdb dans ${newip}:/var/lib/samba/" 
+	scp /root/save/secrets.tdb root@$newip:/var/lib/samba/ 
+	echo "copie de setup_se3.data dans $newip:/etc/se3/" 
+	scp /root/save/setup_se3.data root@$newip:/etc/se3/ 
+fi
