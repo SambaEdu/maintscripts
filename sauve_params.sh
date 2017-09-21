@@ -203,12 +203,15 @@ else
  echo -e Synchro : Installe >> /root/save/parametres.txt 
 fi
 echo "*******************reservation dhcp*******************" 
-mkdir /test
-chmod -R 777 /test
-mysql se3db -e "select ip,name,mac from se3_dhcp into outfile '/test/dhcp.csv' fields terminated by ';' lines terminated by '\r\n'"
-cp /test/dhcp.csv /root/save
-rm -rf /test/ 
+
+mysql se3db -e "select ip,name,mac from se3_dhcp fields " -BN | sed "s/\t/;/g" >  /root/save/dhcp.csv
+
 #***************************************************************************************************
+
+if [ -e "/var/se3/unattended/install/wpkg/tmp/timeStamps.xml" ];then
+	cp /var/se3/unattended/install/wpkg/tmp/timeStamps.xml /root/save/
+fi
+
 
 echo -e "$COLENTREE"
 echo "####################################"
