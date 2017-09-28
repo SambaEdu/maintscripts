@@ -235,12 +235,12 @@ fi
 if [ "$download" = "yes" ]; then
 	show_title
 	echo -e "$COLINFO"
-	echo "Pré-téléchargement des paquets uniquement"
+	echo "Pré-téléchargement des paquets uniquement" | tee -a $fichier_log
 	echo -e "$COLTXT"
 	SCREEN_TEST
 	GENSOURCESQUEEZE
 	echo -e "$COLINFO"
-	echo "Partie Squeeze - Mise à jour des dépots en cours....Patientez"
+	echo "Partie Squeeze - Mise à jour des dépots en cours....Patientez" | tee -a $fichier_log
 	echo -e "$COLTXT"
 	[ "$DEBUG" != "yes" ] && apt-get clean
 	apt-get -qq update -o Acquire::Check-Valid-Until=false
@@ -253,12 +253,12 @@ if [ "$download" = "yes" ]; then
 	list_module=$(cat /root/se3_update_list)
 	if [ -n "$list_module" ]; then
 		echo ""
-		echo "Téléchargement des modules SE3 devant être mis à jour avant migration" 
-		apt-get install $list_module -d -y --force-yes --allow-unauthenticated 2>&1
+		echo "Téléchargement des modules SE3 devant être mis à jour avant migration" | tee -a $fichier_log
+		apt-get install $list_module -d -y --force-yes --allow-unauthenticated 2>&1 
 	fi
 	rm -f /root/se3_update_list
 	echo -e "$COLINFO"
-	echo "Téléchargement des paquets ldap squeeze si nécessaire"
+	echo "Téléchargement des paquets ldap squeeze si nécessaire" | tee -a $fichier_log
 	echo -e "$COLTXT"
 	apt-get install ldap-utils libldap-2.4-2 slapd -d -y --allow-unauthenticated
 	GENSOURCEWHEEZY
@@ -267,14 +267,14 @@ if [ "$download" = "yes" ]; then
 	echo -e "$COLTXT"
 	apt-get -qq update
 	echo -e "$COLINFO"
-	echo "Téléchargement des paquets Wheezy nécessaires à la migration lancé"
+	echo "Téléchargement des paquets Wheezy nécessaires à la migration lancé" | tee -a $fichier_log
 	echo -e "$COLTXT"
 	sleep 1
-	apt-get dist-upgrade -d -y --allow-unauthenticated
+	apt-get dist-upgrade -d -y --allow-unauthenticated | tee -a $fichier_log
 	echo -e "$COLINFO"
 	echo "terminé !!"
 	echo -e "$COLTXT"
-	echo "Taille du cache actuel : $(du -sh /var/cache/apt/archives/ |  awk '{print $1}')"
+	echo "Taille du cache actuel : $(du -sh /var/cache/apt/archives/ |  awk '{print $1}')" | tee -a $fichier_log
 	touch "$chemin_migr/download_only"
 	echo -e "$COLINFO"
 	echo "Rétablissement des sources squeeze"
@@ -449,14 +449,14 @@ if [ ! -e $chemin_migr/phase1-ok ]; then
     echo "Mise à jour des paquets disponibles....Patientez svp"
     echo -e "$COLTXT"
     apt-get -qq update -o Acquire::Check-Valid-Until=false
-    echo "Maj si besoin de debian-archive-keyring"
-    apt-get install debian-archive-keyring --allow-unauthenticated
+    echo "Maj si besoin de debian-archive-keyring" | tee -a $fichier_log
+    apt-get install debian-archive-keyring --allow-unauthenticated | tee -a $fichier_log
     SE3_CANDIDAT=$(apt-cache policy se3 | grep "Candidat" | awk '{print $2}')
     SE3_INSTALL=$(apt-cache policy se3 | grep "Install" | awk '{print $2}')
     #[ "$SE3_CANDIDAT" != "$SE3_INSTALL" ] && ERREUR "Il semble que votre serveur se3 n'est pas a jour\nMettez votre serveur a jour puis relancez le script de migration" && exit 1
 
     echo -e "$COLPARTIE"
-    echo "Migration phase 1 : Mise a jour SE3 si necessaire"
+    echo "Migration phase 1 : Mise a jour SE3 si necessaire" | tee -a $fichier_log
     echo -e "$COLTXT"
     /usr/share/se3/scripts/install_se3-module.sh se3 | grep -v "pre>" | tee -a $fichier_log
     #/usr/share/se3/scripts/se3-upgrade.sh | grep -v pre
@@ -465,15 +465,17 @@ if [ ! -e $chemin_migr/phase1-ok ]; then
     if [ "$?" != "0" ]; then
     ERREUR "Une erreur s'est produite lors de la mise à jour des modules\nIl est conseille de couper la migration"
 	POURSUIVRE
-	
+	else
+	echo "Migration phase 1 ok"  | tee -a $fichier_log
     fi
     touch $chemin_migr/phase1-ok
 else
-	echo "$chemin_migr/phase1-ok existe, on passe cette phase"
+	echo "$chemin_migr/phase1-ok existe, on passe cette phase" | tee -a $fichier_log
 fi
 
+POURSUIVRE
 echo -e "$COLINFO"
-echo "Test de montage sur Backuppc"
+echo "Test de montage sur Backuppc" | tee -a $fichier_log
 echo -e "$COLTXT"
 df -h | grep backuppc && umount /var/lib/backuppc
 if [ ! -z "$(df -h | grep /var/lib/backuppc)" ]; then 
@@ -487,16 +489,18 @@ fi
 
 if [ "$DIST" = "squeeze" ]; then
 	echo -e "$COLINFO"
-	echo "Mise à jour slapd et consors vers leur dernière version stable"
+	echo "Mise à jour slapd et consors vers leur dernière version stable" | tee -a $fichier_log
 	echo -e "$COLTXT"
-	apt-get install ldap-utils libldap-2.4-2 slapd -y --allow-unauthenticated
+	apt-get install ldap-utils libldap-2.4-2 slapd -y --allow-unauthenticated | tee -a $fichier_log
 # 	aptitude install slapd -y --> aptitude sucks and can desinstall se3 !!
 	# purges trace slapd backup 
-	rm -rf /var/backups/slapd*
-	rm -rf /var/backups/${ldap_base_dn}*
+	echo "Nettoyage backups ldap dans /var/backups" | tee -a $fichier_log
+	rm -rvf /var/backups/slapd* | tee -a $fichier_log
+	rm -rvf /var/backups/${ldap_base_dn}* | tee -a $fichier_log
+	rm -rvf /var/backups/2.4.23* | tee -a $fichier_log
 	SLAPD_VERSION=$(dpkg -s slapd | grep Version |cut -d" " -f2)
 	PATHSAVLDAP="/var/backups/$SLAPD_VERSION"
-	mkdir -p $PATHSAVLDAP
+	mkdir -pv $PATHSAVLDAP | tee -a $fichier_log
 	ldapsearch -xLLL -D $adminRdn,$ldap_base_dn -w $adminPw > "$PATHSAVLDAP/${ldap_base_dn}.ldif"
 fi
 
@@ -507,16 +511,7 @@ if [ ! -e $chemin_migr/phase2a-ok ]; then
 # 	cat /var/lib/ldap/DB_CONFIG | grep -v "sactivation logs ldap" > $chemin_migr/DB_CONFIG
 # 	cp $chemin_migr/DB_CONFIG /var/lib/ldap/DB_CONFIG
 	cp /etc/ldap/slapd.conf $chemin_migr/
-
 	chown -R openldap:openldap /var/lib/ldap/
-
-	# echo "" > /etc/environment 
-
-# 	/etc/init.d/nut stop
-# 
-# 	# purge config nut
-# 	rm -f /etc/nut/*
-# 	rm -f /etc/default/nut 
 	touch $chemin_migr/phase2a-ok 
 	
 else
@@ -581,7 +576,7 @@ if [ ! -e $chemin_migr/phase2b-ok ]; then
 	rm -f /etc/init.d/backuppc.ori 
 	if [ -e "$BPC_SCRIPT" ]; then
 		echo -e "$COLINFO"
-		echo "Test bon fonctionnenment backuppc et Suppression en cas de besoin"
+		echo "Test bon fonctionnenment backuppc et Suppression en cas de besoin" | tee -a $fichier_log
 		echo -e "$COLTXT"
 		if [ ! -e "$BPC_PID" ]; then
 			$BPC_SCRIPT start 
@@ -631,7 +626,7 @@ if [ ! -e $chemin_migr/phase2b-ok ]; then
 	
 	
 	
-	echo "mise a jour de lib6 - locales  et mysql-server" | tee -a $fichier_log
+	echo "mise a jour de mysql-server" | tee -a $fichier_log
 
 	aptitude -o Dpkg::Options::="--force-confnew" install mysql-server -y | tee -a $fichier_log
 	if [ "$?" != "0" ]; then
@@ -665,65 +660,44 @@ else
 
 fi
 
+echo -e "$COLPARTIE"
+echo "Partie 3 : Migration du service annuaire slapd" 
+echo -e "$COLTXT"
+POURSUIVRE
+# echo -e "$COLINFO"
+# 
+# slapcat > /root/annu-actuel.ldif
+# 
+# 
+# echo "Reconstruction de l'annuaire"
+# 	service slapd stop
+# 	rm -rf /var/lib/ldap.old
+# 	mv /var/lib/ldap /var/lib/ldap.old
+#     install -d -o openldap -g openldap /var/lib/ldap
+#     cp /var/lib/ldap.old/DB_CONFIG /var/lib/ldap
+# 	mv /etc/ldap/slapd.d* /root/
+	
+apt-get install ldap-utils libldap-2.4-2 slapd -y	 | tee -a $fichier_log
+	
+if [ "$?" != "0" ]; then
+	ERREUR "Une erreur s'est produite lors de la mise a jour du paquet slapd"
+# 		ERREXIT
+else
+touch $chemin_migr/phase3-ok
+fi
 
-# if [ -e "/usr/share/ocsinventory-server" -a ! -e "$chemin_migr/ocs-ok" ]; then
-# 	rootsql=$(grep password  /root/.my.cnf | cut -d"=" -f2)
-# 	ocssql=$(grep PSWD_BASE  /var/www/se3/includes/dbconfig.inc.php | cut -d\" -f4)
+
+# 	echo "integration sauvegarde"
+# 	slapadd -c -l annu-actuel.ldif
+# 	chown -R openldap:openldap /var/lib/ldap
+# 	service slapd start
 # 
-# 	echo -e "$COLPARTIE"
-# 	echo "Partie 3 : Mise a jour OCS Inventory" 
-# 	echo -e "$COLTXT"
-# 	echo "ocsinventory-server	ocsinventory-server/password-confirm	password	$rootsql
-# ocsinventory-server	ocsinventory-server/mysql/admin-pass	password	$rootsql
-# # Mot de passe de connexion MySQL pour ocsinventory-server :
-# ocsinventory-server	ocsinventory-server/mysql/app-pass	password	$ocssql
-# ocsinventory-server	ocsinventory-server/app-password-confirm	password	$ocssql
-# " > config_ocs.txt
-# 	debconf-set-selections < config_ocs.txt
-# 	# DEBIAN_PRIORITY="high"
-# 	# 	DEBIAN_FRONTEND="dialog" 
-# 	# DEBIAN_FRONTEND="dialog" DEBIAN_PRIORITY="high" 
-# 	apt-get install ocsinventory-server -y 
-# 
-# 	if [ "$?" != "0" ]; then
-# 		echo -e "$COLINFO"
-# 		echo "Reconfiguration du paquet OCS pour correction Erreur dpkg"
-# 		echo -e "$COLTXT"
-# 		dpkg-reconfigure ocsinventory-server && echo "Ok !!" 
-# 	else
-# 		echo -e "$COLINFO"
-# 		echo "Configuration du paquet OCS Ok !!"
-# 		echo -e "$COLTXT"
-# 	fi
-# 
-# 	echo -e "$COLINFO"
-# 	echo "Configuration du paquet OCS Ok !!"
-# 	echo -e "$COLTXT"
-# 	/etc/init.d/apache2se restart
-# 	sleep 2
-# 	APACHE2SE_PID="/var/run/apache2se.pid"
-# 	OCSCONF="/etc/ocsinventory/ocsinventory.conf"
-# 
-# 	if [ -e "$OCSCONF" ]; then
-# 		if [ ! -e "$APACHE2SE_PID" ]; then
-# 				echo "Interface Web HS - Tentative de reparation automatique de la conf OCS"
-# 				grep -q "PerlSetEnv OCS_DB_PORT 3306" $OCSCONF || sed "s/PerlSetEnv OCS_DB_PORT/PerlSetEnv OCS_DB_PORT 3306 /" -i $OCSCONF 
-# 				/etc/init.d/apache2se restart 
-# 				sleep 2
-# 				if [ ! -e "$APACHE2SE_PID" ]; then
-# 					echo "Interface Web toujours HS malgre la tentative de reparation automatique"
-# 					echo "Extrait de /var/log/apache2se/errorse.log"
-# 					tail /var/log/apache2se/errorse.log
-# 				fi
-# 			
-# 		fi
-# 	fi
-# 
-# fi
+echo -e "$COLTXT"
+
 
 
 echo -e "$COLPARTIE"
-echo "Partie 4 : Migration en Wheezy - installations des paquets restants" 
+echo "Partie 4 : Migration en Wheezy - installations des paquets restants" | tee -a $fichier_log
 echo -e "$COLTXT"
 POURSUIVRE
 echo -e "$COLINFO"
