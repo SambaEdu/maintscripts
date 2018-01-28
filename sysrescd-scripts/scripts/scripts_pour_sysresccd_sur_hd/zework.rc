@@ -1,0 +1,5 @@
+if [ ! -z "$work" ]; then
+	if [ "$TTY" = "/dev/vc/1" -o "$TTY" = "/dev/tty1" ]; then
+		/bin/$work
+	fi
+fi

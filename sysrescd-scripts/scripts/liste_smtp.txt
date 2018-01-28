@@ -1,0 +1,5 @@
+# Fichier liste_smtp.txt a copier dans /root
+smtp.free.fr
+smtp.wanadoo.fr
+smtp.ac-rouen.fr
+smtp.ac-caen.fr

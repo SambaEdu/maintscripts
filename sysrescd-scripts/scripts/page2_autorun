@@ -1,0 +1,272 @@
+#!/bin/bash
+
+# Deuxième page du script de lancement auto du CD-ROM
+# S.Boireau (Animateur TICE sur le Secteur de Bernay/Pont-Audemer)
+# Dernière modification: 07/01/2009
+
+# **********************************
+# Version adaptée à System Rescue CD
+# **********************************
+
+menu="page2_autorun"
+
+#Couleurs
+COLTITRE="\033[1;35m"	# Rose
+COLPARTIE="\033[1;34m"	# Bleu
+
+COLTXT="\033[0;37m"	# Gris
+COLCHOIX="\033[1;33m"	# Jaune
+COLDEFAUT="\033[0;33m"	# Brun-jaune
+COLSAISIE="\033[1;32m"	# Vert
+
+COLCMD="\033[1;37m"	# Blanc
+
+COLERREUR="\033[1;31m"	# Rouge
+COLINFO="\033[0;36m"	# Cyan
+
+
+clear
+echo -e "${COLTITRE}\c"
+echo "-------------------------------------------------------------------"
+echo -e "                            AUTRES CHOIX                  (page 2)"
+echo "-------------------------------------------------------------------"
+echo -e "${COLCMD}\c"
+echo -e "   - ${COLCHOIX}s${COLCMD} Configurer et lancer le serveur de fichiers Samba"
+echo -e "   - ${COLCHOIX}t${COLCMD} Configurer et lancer le serveur TFTP"
+echo "-------------------------------------------------------------------"
+echo -e "${COLCMD}\c"
+echo -e "   - ${COLCHOIX}m${COLCMD} Lancement d'un script de préparation de SysRescCD"
+echo -e "       pour en faire une distribution de mirroring SSH"
+echo -e "       d'un serveur SambaEdu3"
+echo "-------------------------------------------------------------------"
+echo -e "${COLCMD}\c"
+echo -e "   - ${COLCHOIX}MAJ${COLCMD} Mise à jour des scripts sur un SysRescCD"
+echo -e "         installé sur disque dur."
+echo "-------------------------------------------------------------------"
+echo -e "${COLCMD}\c"
+echo -e "   - ${COLCHOIX}0${COLCMD} Retourner au menu autorun précédent"
+echo "-------------------------------------------------------------------"
+echo -e "   - ${COLCHOIX}1${COLCMD} Réinstaller LILO."
+echo -e "   - ${COLCHOIX}2${COLCMD} Rechercher un/des mot(s) de passe LILO."
+echo -e "${COLCMD}\c"
+echo -e "   - ${COLCHOIX}3${COLCMD} Réinstaller GRUB."
+echo -e "   - ${COLCHOIX}mdp${COLCMD} Virer un mot de passe W\$XP (expérimental)"
+echo -e "   - ${COLCHOIX}ntfs${COLCMD} Réduire une partition NTFS (expérimental)"
+echo -e "   - ${COLCHOIX}9xdom${COLCMD} Griser/dégriser le champ domaine du login sur W98SE (expérimental)"
+#echo -e "   - ${COLCHOIX}conf${COLCMD} Générer un rapport de la configuration matérielle"
+echo -e "   - ${COLCHOIX}d${COLCMD} Lire la doc HTML"
+#echo -e "   - ${COLCHOIX}6${COLCMD} ..."
+#echo -e "   - ${COLCHOIX}${COLCMD} ..."
+#echo -e "   - ${COLCHOIX}${COLCMD} ..."
+#echo -e "   - ${COLCHOIX}${COLCMD} ..."
+#echo "-------------------------------------------------------------------"
+echo -e "     - ${COLCHOIX}q${COLCMD} Quitter le programme     - ${COLCHOIX}r${COLCMD} Rebooter la machine"
+echo "-------------------------------------------------------------------"
+#echo ""
+echo -e "   Votre choix ? ${COLSAISIE}\c"
+read CHOIX < /dev/tty
+
+echo -e "${COLCMD}"
+
+case "$CHOIX" in
+
+s) clear
+echo "Configuration et lancement du serveur de fichiers Samba !"
+echo
+echo
+sleep 1
+srv_samba1.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+t) clear
+echo "Configuration et lancement du serveur TFTP !"
+echo
+echo
+sleep 1
+srv_tftp.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+m) clear
+echo "Lancement d'un script de préparation de SysRescCD"
+echo "pour en faire une distribution de mirroring SSH d'un serveur SambaEdu3"
+echo
+echo
+sleep 1
+passwdgroupmin.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+ntfs) clear
+echo "Lancement d'un script de réduction de partition NTFS"
+echo "en ligne de commande"
+echo
+echo
+sleep 1
+ntfs_resize.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+mdp) clear
+echo "Lancement de chntpw..."
+echo
+echo
+sleep 1
+virer_mdp_xp.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+
+9xdom) clear
+echo "Lancement d'un script de remplacement du fichier"
+echo "   C:\WINDOWS\SYSTEM\mprserv.dll "
+echo "contrôlant la possibilité de modification"
+echo "du champ domaine de la fenêtre de login."
+echo
+echo
+sleep 1
+w9x_domaine_grise.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+#conf) clear
+#echo "Lancement d'un script de génération de rapport sur la configuration matérielle."
+#echo
+#echo
+#sleep 1
+#generer_rapport_machine.sh
+#echo
+#echo
+#cd /root
+#./$menu
+#;;
+
+MAJ) clear
+echo -e "$COLTXT"
+echo -e "Lancement d'un script de mise à jour des scripts ${COLINFO}sauvewin.sh${COLTXT},"
+echo -e "${COLINFO}restaurewin.sh${COLTXT},... d'un SysRescCD installé sur disque dur."
+echo
+echo
+sleep 1
+maj_sauvewin_restaurewin2.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+1) clear
+echo "Réinstallation d'un LILO !"
+echo
+echo
+sleep 1
+reinstall_lilo.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+2) clear
+echo "Recherche d'un/de mot(s) de passe LILO. !"
+echo
+echo
+sleep 1
+recherche_mdp_lilo.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+3) clear
+echo "Réinstallation d'un GRUB !"
+echo
+echo
+sleep 1
+reinstall_grub.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+d) clear
+echo "Accès à la documentation HTML!"
+echo
+echo
+sleep 1
+/bin/liredoc.sh
+echo
+echo
+cd /root
+./$menu
+;;
+
+0) clear
+echo "Retour au menu autorun précédent !"
+echo
+echo
+sleep 1
+echo
+exit 0
+;;
+
+q) clear
+echo "Bye bye !"
+echo
+echo
+sleep 1
+echo
+exit 1
+;;
+
+r) clear
+echo -e "$COLERREUR"
+echo "Vous avez demandé à rebooter la machine !"
+echo -e "$COLCMD"
+echo -e "Etes-vous sûr ??? (o/n) $COLSAISIE\c"
+read REPONSE
+if [ "$REPONSE" = "o" ]; then
+	echo -e "$COLERREUR"
+	echo "Reboot lancé !! "
+	echo -e "$COLCMD"
+	reboot
+else
+	echo -e "$COLCMD"
+	cd /root
+	./$menu
+fi
+echo
+echo
+;;
+
+*) clear
+echo -e "${COLERREUR}Entrée erronée!${COLTXT} Merci de recommencer."
+echo ""
+echo "Appuyez sur une touche pour continuer..."
+read PAUSE
+cd /root
+./$menu
+;;
+
+esac

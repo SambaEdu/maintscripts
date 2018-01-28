@@ -1,0 +1,8 @@
+# Nom du script autorun:
+script_autorun="autorun.sh"
+# Ce script lorsqu'il est nommé autorun est normalement lancé automatiquement
+# mais avec la version 0.3.5 de SysRescCD, cela se bloque...
+
+if [ "$TTY" = "/dev/tty1" ]; then
+	/root/$script_autorun
+fi

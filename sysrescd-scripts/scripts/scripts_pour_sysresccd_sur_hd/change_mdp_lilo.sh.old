@@ -1,0 +1,238 @@
+#!/bin/sh
+
+# Script de changement de mot de passe LILO:
+# Version du: 06/01/2009
+
+COLPARTIE="\033[1;34m"
+COLINFO="\033[0;33m"
+COLTITRE="\033[1;35m"
+COLTXT="\033[0;37m"
+COLCMD="\033[1;37m"
+COLSAISIE="\033[1;32m"
+COLERREUR="\033[1;31m"
+COLCHOIX="\033[1;33m"
+COLDEFAUT="\033[0;33m"
+
+echo -e "$COLPARTIE"
+echo "***********************************"
+echo "* Changement du mot de passe LILO *"
+echo "***********************************"
+
+REPONSE="o"
+while [ "$REPONSE" = "o" ]
+do
+	QUELMDP=""
+	while [ "$QUELMDP" != "1" -a "$QUELMDP" != "2" -a "$QUELMDP" != "3" ]
+	do
+		echo -e "${COLTXT}"
+		echo -e "Vous pouvez changer le mot de passe de:"
+		echo -e " (${COLCHOIX}1${COLTXT}) boot sous Linux sans pré-selection\c"
+		#if cat /etc/lilo.conf | grep "password" | grep "#sauve" > /dev/null; then
+		if cat /etc/lilo.conf | grep "label=sauve" > /dev/null; then
+			echo -e ","
+			echo -e " (${COLCHOIX}2${COLTXT}) boot sous Linux avec lancement du script de sauvegarde\c"
+		fi
+		if cat /etc/lilo.conf | grep "label=restaure" > /dev/null; then
+			echo -e ","
+			echo -e " (${COLCHOIX}3${COLTXT}) boot sous Linux avec lancement du script de restauration."
+		fi
+
+		echo -e "${COLTXT}"
+		echo -e "Quel mot de passe souhaitez-vous changer/définir? $COLSAISIE\c"
+		read QUELMDP
+	done
+
+
+	echo -e "$COLINFO"
+	#echo -e "Veuillez éviter dans votre mot de passe les espaces, les accents, les caractères"
+	#echo -e "spéciaux qui pourraient ne pas être disponibles sur le clavier minimal chargé"
+	#echo -e "lors de l affichage de LILO."
+	echo "Le clavier chargé lors du boot est assez limité."
+	echo "Veuillez vous limiter à un mot de passe alphanumérique."
+
+	SUITE="n"
+	while [ "${SUITE}" = "n" ]
+	do
+		echo -e "${COLTXT}"
+		echo -e "Veuillez saisir le nouveau mot de passe: $COLSAISIE\c"
+		read NOUVEAU_MDP
+
+		test=$(echo "${NOUVEAU_MDP}" | sed -e "s/[0-9A-Za-z]//g")
+		if [ ! -z "$test" ]; then
+			echo -e "${COLERREUR}"
+			echo "Des caractères susceptibles de ne pas être disponibles au niveau de LILO"
+			echo "ont été saisis."
+			SUITE="n"
+		else
+			SUITE="o"
+		fi
+	done
+
+	echo -e "${COLTXT}"
+	echo -e "Modification du mot de passe..."
+	echo -e "${COLCMD}\c"
+	case  $QUELMDP in
+		1)
+			ladate=$(date "+%Y_%m_%d-%HH%MMIN%SS")
+			cp /etc/lilo.conf /etc/lilo.conf.$ladate
+			chmod 700 /etc/lilo.conf.$ladate
+
+			if [ ! -z "$NOUVEAU_MDP" ]; then
+				if cat /etc/lilo.conf | grep "password" | grep "#linux" > /dev/null; then
+					ANCIEN_MDP=$(cat /etc/lilo.conf | grep "password" | grep "#linux" | cut -d"=" -f2 | cut -d" " -f1 | head -n1)
+					cat /etc/lilo.conf.$ladate | sed -e "s/password=$ANCIEN_MDP #linux/password=$NOUVEAU_MDP #linux/" > /etc/lilo.conf
+				else
+					cat /etc/lilo.conf | grep -B200 "label=Linux" > /tmp/lilo_debut.$ladate
+					cat /etc/lilo.conf | grep -A200 "label=Linux" | grep -v "label=Linux" > /tmp/lilo_fin.$ladate
+					cat /tmp/lilo_debut.$ladate > /etc/lilo.conf
+					echo "     password=$NOUVEAU_MDP #linux" >> /etc/lilo.conf
+					cat /tmp/lilo_fin.$ladate >> /etc/lilo.conf
+				fi
+			else
+				if cat /etc/lilo.conf | grep "password" | grep "#linux" > /dev/null; then
+					ANCIEN_MDP=$(cat /etc/lilo.conf | grep "password" | grep "#linux" | cut -d"=" -f2 | cut -d" " -f1 | head -n1)
+					cat /etc/lilo.conf.$ladate | grep -v "password=$ANCIEN_MDP #linux" > /etc/lilo.conf
+				fi
+			fi
+		;;
+		2)
+			ladate=$(date "+%Y_%m_%d-%HH%MMIN%SS")
+			cp /etc/lilo.conf /etc/lilo.conf.$ladate
+			chmod 700 /etc/lilo.conf.$ladate
+
+			if [ ! -z "$NOUVEAU_MDP" ]; then
+				if cat /etc/lilo.conf | grep "password" | grep "#sauve" > /dev/null; then
+					ANCIEN_MDP=$(cat /etc/lilo.conf | grep "password" | grep "#sauve" | cut -d"=" -f2 | cut -d" " -f1 | head -n1)
+					cat /etc/lilo.conf.$ladate | sed -e "s/password=$ANCIEN_MDP #sauve/password=$NOUVEAU_MDP #sauve/" > /etc/lilo.conf
+				else
+					cat /etc/lilo.conf | grep -B200 "label=sauve" > /tmp/lilo_debut.$ladate
+					cat /etc/lilo.conf | grep -A200 "label=sauve" | grep -v "label=sauve" > /tmp/lilo_fin.$ladate
+					cat /tmp/lilo_debut.$ladate > /etc/lilo.conf
+					echo "     password=$NOUVEAU_MDP #sauve" >> /etc/lilo.conf
+					cat /tmp/lilo_fin.$ladate >> /etc/lilo.conf
+				fi
+			else
+				if cat /etc/lilo.conf | grep "password" | grep "#sauve" > /dev/null; then
+					ANCIEN_MDP=$(cat /etc/lilo.conf | grep "password" | grep "#sauve" | cut -d"=" -f2 | cut -d" " -f1 | head -n1)
+					cat /etc/lilo.conf.$ladate | grep -v "password=$ANCIEN_MDP #sauve" > /etc/lilo.conf
+				fi
+			fi
+		;;
+		3)
+			ladate=$(date "+%Y_%m_%d-%HH%MMIN%SS")
+			cp /etc/lilo.conf /etc/lilo.conf.$ladate
+			chmod 700 /etc/lilo.conf.$ladate
+
+			if [ ! -z "$NOUVEAU_MDP" ]; then
+				if cat /etc/lilo.conf | grep "password" | grep "#restaure" > /dev/null; then
+					ANCIEN_MDP=$(cat /etc/lilo.conf | grep "password" | grep "#restaure" | cut -d"=" -f2 | cut -d" " -f1 | head -n1)
+					cat /etc/lilo.conf.$ladate | sed -e "s/password=$ANCIEN_MDP #restaure/password=$NOUVEAU_MDP #restaure/" > /etc/lilo.conf
+				else
+					cat /etc/lilo.conf | grep -B200 "label=restaure" > /tmp/lilo_debut.$ladate
+					cat /etc/lilo.conf | grep -A200 "label=restaure" | grep -v "label=restaure" > /tmp/lilo_fin.$ladate
+					cat /tmp/lilo_debut.$ladate > /etc/lilo.conf
+					echo "     password=$NOUVEAU_MDP #restaure" >> /etc/lilo.conf
+					cat /tmp/lilo_fin.$ladate >> /etc/lilo.conf
+				fi
+			else
+				if cat /etc/lilo.conf | grep "password" | grep "#restaure" > /dev/null; then
+					ANCIEN_MDP=$(cat /etc/lilo.conf | grep "password" | grep "#restaure" | cut -d"=" -f2 | cut -d" " -f1 | head -n1)
+					cat /etc/lilo.conf.$ladate | grep -v "password=$ANCIEN_MDP #restaure" > /etc/lilo.conf
+				fi
+			fi
+		;;
+	esac
+	rm -f /tmp/lilo_debut*
+	rm -f /tmp/lilo_fin*
+
+	echo -e "$COLINFO"
+	echo -e "Modification terminée!"
+
+	REPONSE=""
+	while [ "$REPONSE" != "o" -a "$REPONSE" != "n" ]
+	do
+		echo -e "${COLTXT}"
+		echo -e "Voulez-vous modifier un autre mot de passe? (${COLCHOIX}o/n${COLTXT}) $COLSAISIE\c"
+		read REPONSE
+	done
+done
+
+# Modification des droits pour le cas où on met des mots de passe.
+chmod 600 /etc/lilo.conf
+
+echo -e "${COLTXT}"
+echo "Réinstallation de LILO dans le MBR:"
+echo -e "${COLCMD}"
+lilo
+
+echo -e "$COLINFO"
+echo -e "Des copies de sauvegarde du /etc/lilo.conf ont été effectuées."
+echo -e "Ces fichiers étaient destinés à vous permettre de revenir à une version"
+echo -e "antérieure du fichier de configuration en cas de pépin lors des modifications"
+echo -e "de mots de passe."
+echo -e "Ces fichiers contiennent peut-être des mots de passe."
+echo -e "Vous pouvez souhaiter ne pas laisser de trace des anciens mots de passe."
+
+REPONSE=""
+while [ "$REPONSE" != "o" -a "$REPONSE" != "n" ]
+do
+	echo -e "${COLTXT}"
+	echo -e "Voulez-vous supprimer les fichiers de sauvegarde des versions précédentes"
+	echo -e "du /etc/lilo.conf? (${COLCHOIX}o/n${COLTXT}) $COLSAISIE\c"
+	read REPONSE
+done
+
+if [ "$REPONSE" = "o" ]; then
+	echo -e "${COLTXT}"
+	echo -e "Suppression des fichiers /etc/lilo.conf.*"
+	echo -e "${COLCMD}\c"
+	rm -f /etc/lilo.conf.*
+fi
+
+echo -e "$COLINFO"
+echo -e "Si le fichier /etc/lilo.conf contient des mots de passe, il est possible"
+echo -e "de consulter ce fichier pour trouver les mots de passe... même depuis Window\$."
+echo -e "C'est un problème de sécurité."
+
+REPONSE=""
+while [ "$REPONSE" != "o" -a "$REPONSE" != "n" ]
+do
+	echo -e "${COLTXT}"
+	echo -e "Voulez-vous cacher les mots de passe du fichier /etc/lilo.conf? (${COLCHOIX}o/n${COLTXT}) $COLSAISIE\c"
+	read REPONSE
+done
+
+if [ "$REPONSE" = "o" ]; then
+	echo -e "${COLTXT}"
+	echo -e "Sécurisation du /etc/lilo.conf"
+	echo -e "${COLCMD}\c"
+	mv /etc/lilo.conf /etc/lilo.conf.secu
+#	cat /etc/lilo.conf.secu | while read A
+#	do
+#		if echo "$A" | grep password | grep "#linux" > /dev/null; then
+#			echo "     password=XXXXX #linux" >> /etc/lilo.conf
+#		else
+#			if echo "$A" | grep password | grep "#sauve" > /dev/null; then
+#				echo "     password=XXXXX #sauve" >> /etc/lilo.conf
+#			else
+#				if echo "$A" | grep password | grep "#restaure" > /dev/null; then
+#					echo "     password=XXXXX #restaure" >> /etc/lilo.conf
+#				else
+#					echo "$A" >> /etc/lilo.conf
+#				fi
+#			fi
+#		fi
+#	done
+
+	sed -r 's/(password=)[A-Za-z0-9]+( #*)/password=XXXXX\2/' /etc/lilo.conf.secu > /etc/lilo.conf
+
+	echo -e "${COLTXT}"
+	echo "Voici le nouveau contenu des lignes password:"
+	echo -e "${COLCMD}\c"
+	grep password /etc/lilo.conf
+	rm -f /etc/lilo.conf.secu
+fi
+
+echo -e "${COLTITRE}"
+echo "Terminé."
+echo -e "${COLTXT}"
