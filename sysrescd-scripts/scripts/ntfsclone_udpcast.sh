@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Auteur: Stephane Boireau
-# Derniere modification: 08/07/2014
+# Derniere modification: 22/09/2017
 
 source /bin/crob_fonctions.sh
 
@@ -37,10 +37,16 @@ if mount | grep ${mnt_cdrom} > /dev/null; then
 	fi
 fi
 
-# Pour eliminer les options ar_nowait,... qui ne permettent pas de définir des variables
-cat /proc/cmdline | sed -e "s| |\n|g" | grep "=" > /tmp/tmp_proc_cmdline.txt
-#source /tmp/tmp_proc_cmdline.txt
-. /tmp/tmp_proc_cmdline.txt
+# Pour des tests, il est possible de modifier un fichier de parametres sur le modele de celui obtenu normalement via /proc/cmdline
+fich_cmdline=$(echo "$*"|sed -e "s| |\n|g"|grep "cmdline="|cut -d"=" -f2)
+if [ -z "$fich_cmdline" ]; then
+	# Pour eliminer les options ar_nowait,... qui ne permettent pas de définir des variables
+	cat /proc/cmdline | sed -e "s| |\n|g" | grep "=" > /tmp/tmp_proc_cmdline.txt
+	#source /tmp/tmp_proc_cmdline.txt
+	#. /tmp/tmp_proc_cmdline.txt
+	fich_cmdline=/tmp/tmp_proc_cmdline.txt
+fi
+. ${fich_cmdline}
 
 # Pour relancer le script en modifiant des parametres, par exemple le nombre min_receivers
 # Copier, editer et modifier:
@@ -958,8 +964,23 @@ else
 			fdisk -l /dev/$HD > /tmp/fdisk_l_${HD}.txt 2>&1
 			#TMP_disque_en_GPT=$(grep "WARNING: GPT (GUID Partition Table) detected on '/dev/${HD}'" /tmp/fdisk_l_${HD}.txt|cut -d"'" -f2)
 
+			#if [ "$(IS_GPT_PARTTABLE ${HD})" = "y" ]; then
+			# Modif pour ne pas considerer qu'on est en GPT seulement si le recepteur est en GPT, mais seulement si l'emetteur est lui aussi en GPT
 			if [ "$(IS_GPT_PARTTABLE ${HD})" = "y" ]; then
-				TMP_disque_en_GPT=/dev/${HD}
+				if [ -e /tmp/gpt_${HD}.out ]; then
+					TMP_disque_en_GPT=/dev/${HD}
+				else
+					TMP_disque_en_GPT=""
+					# Le recepteur est en GPT, mais l'emetteur est en MSDOS
+					echo -e "${COLTXT}"
+					echo -e "On change la table de partition de gpt en msdos sur le disque $HD..."|tee -a $rapport
+					echo -e "${COLCMD}"
+					parted -s /dev/${HD} -- mklabel msdos
+					#dd if=/dev/zero of=/dev/$HD bs=10M count=100
+					sleep 3
+					partprobe /dev/$HD
+					sleep 3
+				fi
 			else
 				TMP_disque_en_GPT=""
 			fi
@@ -1257,6 +1278,8 @@ Apres ce delai, le clonage va demarrer."
 						commande="udp-sender --file $FICHIER --portbase ${port_courant} --interface $INTERFACE --min-wait ${min_wait} --max-wait 3600 --start-timeout ${delai_autostart} --log /tmp/udpsender.log --pipe 'lzop -c -f -'"
 					elif [ "$COMPRESSION" = "gzip" ]; then
 						commande="udp-sender --file $FICHIER --portbase ${port_courant} --interface $INTERFACE --min-wait ${min_wait} --max-wait 3600 --start-timeout ${delai_autostart} --log /tmp/udpsender.log --pipe 'gzip -c -f -'"
+					elif [ "$COMPRESSION" = "pbzip2" ]; then
+						commande="udp-sender --file $FICHIER --portbase ${port_courant} --interface $INTERFACE --min-wait ${min_wait} --max-wait 3600 --start-timeout ${delai_autostart} --log /tmp/udpsender.log --pipe 'pbzip2 -1 -c -f -'"
 					else
 						echo "udp-sender --file $FICHIER --portbase ${port_courant} --interface $INTERFACE --min-wait ${min_wait} --max-wait 3600 --start-timeout ${delai_autostart} --log /tmp/udpsender.log"
 					fi
